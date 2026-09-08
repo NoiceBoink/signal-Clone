@@ -145,20 +145,26 @@ async def get_db_context():
 async def init_db():
     """Create all tables and indexes if they do not exist."""
     if is_turso_configured():
-        logger.info(f"Connecting to Turso Cloud Database ({get_turso_url()})...")
+        logger.info("=" * 60)
+        logger.info("[TURSO CLOUD] Mode: ONLINE TURSO DATABASE ACTIVE")
+        logger.info(f"[TURSO CLOUD] Target URL: {get_turso_url()}")
         conn = await get_turso_connection()
         try:
             for stmt in SCHEMA_STATEMENTS:
                 await conn.execute(stmt)
-            logger.info("Turso schema verified/initialized successfully.")
+            cur = await conn.execute("SELECT COUNT(*) FROM users")
+            row = await cur.fetchone()
+            count = row[0] if row else 0
+            logger.info(f"[TURSO CLOUD] Verified! Found {count} users in online Turso database.")
+            logger.info("=" * 60)
         finally:
             await conn.close()
     else:
-        logger.info(f"Initializing local SQLite schema ({DATABASE_PATH})...")
+        logger.info(f"[LOCAL SQLITE] Initializing local SQLite schema ({DATABASE_PATH})...")
         async with aiosqlite.connect(DATABASE_PATH) as db:
             await db.execute("PRAGMA foreign_keys=ON")
             for stmt in SCHEMA_STATEMENTS:
                 await db.execute(stmt)
             await db.commit()
-        logger.info("Local SQLite schema verified/initialized successfully.")
+        logger.info("[LOCAL SQLITE] Local SQLite schema verified/initialized successfully.")
 

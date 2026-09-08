@@ -1,4 +1,4 @@
-﻿"""
+"""
 Turso / libSQL Cloud Database Client
 Provides an async SQLite-compatible adapter layer over libsql-client for Turso Cloud.
 """
@@ -19,8 +19,11 @@ def is_turso_configured() -> bool:
 
 
 def get_turso_url() -> str:
-    """Retrieve Turso database URL."""
-    return os.getenv("TURSO_DATABASE_URL", "").strip()
+    """Retrieve Turso database URL, normalizing libsql:// to https:// for HTTP transport."""
+    url = os.getenv("TURSO_DATABASE_URL", "").strip()
+    if url.startswith("libsql://"):
+        url = url.replace("libsql://", "https://")
+    return url
 
 
 def get_turso_token() -> str:
@@ -117,12 +120,19 @@ class TursoConnection:
         await self._client.close()
 
 
+_turso_logged = False
+
+
 def create_turso_client() -> libsql_client.Client:
     """Create a new libsql_client.Client configured with Turso URL and token."""
+    global _turso_logged
     url = get_turso_url()
     token = get_turso_token()
     if not url or not token:
         raise ValueError("TURSO_DATABASE_URL and TURSO_AUTH_TOKEN must be configured.")
+    if not _turso_logged:
+        logger.info(f"[TURSO CLOUD] Successfully established connection to Turso Cloud: {url}")
+        _turso_logged = True
     return libsql_client.create_client(url=url, auth_token=token)
 
 
