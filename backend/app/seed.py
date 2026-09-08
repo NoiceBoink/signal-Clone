@@ -8,7 +8,7 @@ import uuid
 from datetime import datetime, timedelta
 from passlib.context import CryptContext
 
-from .database import init_db, DATABASE_PATH
+from .database import init_db, get_db_context
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -22,16 +22,14 @@ def _time(minutes_ago: int) -> str:
 
 
 async def seed():
-    import aiosqlite
-
     await init_db()
 
-    async with aiosqlite.connect(DATABASE_PATH) as db:
+    async with get_db_context() as db:
         # Check if already seeded
         cursor = await db.execute("SELECT COUNT(*) as cnt FROM users")
         row = await cursor.fetchone()
-        if row[0] > 0:
-            print("Database already seeded. Delete signal_clone.db to re-seed.")
+        if row and row[0] > 0:
+            print("Database already seeded. Skipping initial seeding.")
             return
 
         print("Seeding database...")
