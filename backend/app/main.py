@@ -73,7 +73,12 @@ app.include_router(messages_router)
 app.include_router(messages_api_router)
 
 
+@app.get("/")
+@app.head("/")
+@app.get("/health")
+@app.head("/health")
 @app.get("/api/health")
+@app.head("/api/health")
 async def health_check():
     return {"status": "ok", "service": "Signal Clone API"}
 
